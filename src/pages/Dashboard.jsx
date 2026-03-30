@@ -1,23 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
+import { dashboardApi } from '../api/client';
 import {
   TrendingUp, Users, ShoppingBag, DollarSign,
-  ArrowUpRight, ArrowDownRight
+  ArrowUpRight, ArrowDownRight, Loader2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-
-const chartData = [
-  { name: 'Mon', sales: 4000, orders: 240 },
-  { name: 'Tue', sales: 3000, orders: 198 },
-  { name: 'Wed', sales: 2000, orders: 980 },
-  { name: 'Thu', sales: 2780, orders: 390 },
-  { name: 'Fri', sales: 1890, orders: 480 },
-  { name: 'Sat', sales: 2390, orders: 380 },
-  { name: 'Sun', sales: 3490, orders: 430 },
-];
 
 const iconColors = {
   orange: { bg: 'rgba(249,115,22,0.12)', color: '#f97316' },
@@ -57,57 +48,127 @@ const tooltipStyle = {
   },
 };
 
-const Dashboard = () => (
-  <div className="animate-fade-in">
-    <Header title="Dashboard Overview" />
+const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    {/* KPI cards */}
-    <div className="stat-grid">
-      <StatCard title="Total Revenue" value="$24,500" icon={DollarSign} trend="up"   trendValue="+12.5%" color="orange" />
-      <StatCard title="Total Orders"  value="1,240"   icon={ShoppingBag} trend="up"   trendValue="+8.2%"  color="blue"   />
-      <StatCard title="Active Users"  value="850"     icon={Users}       trend="down" trendValue="-3.1%"  color="green"  />
-      <StatCard title="Growth"        value="+15.2%"  icon={TrendingUp}  trend="up"   trendValue="+4.5%"  color="purple" />
-    </div>
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await dashboardApi.getStats();
+        if (response.data && response.data.success) {
+          setStats(response.data.data);
+        } else {
+          setStats(response.data); // Fallback
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    {/* Charts */}
-    <div className="chart-grid">
-      <div className="glass chart-card">
-        <h3 className="section-title">Revenue Analysis</h3>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#f97316" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={38} />
-              <Tooltip {...tooltipStyle} itemStyle={{ color: '#f97316' }} />
-              <Area type="monotone" dataKey="sales" stroke="#f97316" fill="url(#colorSales)" strokeWidth={2.5} fillOpacity={1} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-orange-500" size={40} />
+      </div>
+    );
+  }
+
+  const { 
+    totalRevenue = 0, 
+    totalOrders = 0, 
+    activeUsers = 0, 
+    revenueGrowth = 0, 
+    ordersGrowth = 0, 
+    usersGrowth = 0, 
+    chartData = [] 
+  } = stats || {};
+
+  return (
+    <div className="animate-fade-in">
+      <Header title="Dashboard Overview" />
+
+      {/* KPI cards */}
+      <div className="stat-grid">
+        <StatCard 
+          title="Total Revenue" 
+          value={`$${totalRevenue?.toLocaleString()}`} 
+          icon={DollarSign} 
+          trend={revenueGrowth >= 0 ? 'up' : 'down'}   
+          trendValue={`${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`} 
+          color="orange" 
+        />
+        <StatCard 
+          title="Total Orders"  
+          value={totalOrders?.toLocaleString()}   
+          icon={ShoppingBag} 
+          trend={ordersGrowth >= 0 ? 'up' : 'down'}   
+          trendValue={`${ordersGrowth >= 0 ? '+' : ''}${ordersGrowth}%`} 
+          color="blue"   
+        />
+        <StatCard 
+          title="Active Users"  
+          value={activeUsers?.toLocaleString()}     
+          icon={Users}       
+          trend={usersGrowth >= 0 ? 'up' : 'down'}   
+          trendValue={`${usersGrowth >= 0 ? '+' : ''}${usersGrowth}%`} 
+          color="green"  
+        />
+        <StatCard 
+          title="Growth (Revenue)"        
+          value={`${revenueGrowth}%`}  
+          icon={TrendingUp}  
+          trend={revenueGrowth >= 0 ? 'up' : 'down'}   
+          trendValue={`${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`}  
+          color="purple" 
+        />
       </div>
 
-      <div className="glass chart-card">
-        <h3 className="section-title">Order Volume</h3>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={38} />
-              <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} {...tooltipStyle} />
-              <Bar dataKey="orders" fill="#38bdf8" radius={[5, 5, 0, 0]} barSize={26} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Charts */}
+      <div className="chart-grid">
+        <div className="glass chart-card">
+          <h3 className="section-title">Revenue Analysis</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#f97316" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={38} />
+                <Tooltip {...tooltipStyle} itemStyle={{ color: '#f97316' }} />
+                <Area type="monotone" dataKey="sales" stroke="#f97316" fill="url(#colorSales)" strokeWidth={2.5} fillOpacity={1} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="glass chart-card">
+          <h3 className="section-title">Order Volume</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={38} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} {...tooltipStyle} />
+                <Bar dataKey="orders" fill="#38bdf8" radius={[5, 5, 0, 0]} barSize={26} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Dashboard;

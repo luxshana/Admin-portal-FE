@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://food-order.cyclescentre.com/api',
+  baseURL: 'http://127.0.0.1:8000/api',
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -27,6 +27,10 @@ export const productApi = {
 export const orderApi = {
   getAll: () => api.get('/orders'), // Might need verification of endpoint
   updateStatus: (id, status) => api.patch(`/orders/${id}`, { status }),
+};
+
+export const dashboardApi = {
+  getStats: () => api.get('/dashboard'),
 };
 
 export default api;
