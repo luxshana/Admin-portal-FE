@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
-import { dashboardApi } from '../api/client';
+import { useGetDashboardStatsQuery } from '../api/categoriesApi';
 import {
   TrendingUp, Users, ShoppingBag, DollarSign,
   ArrowUpRight, ArrowDownRight, Loader2
@@ -49,32 +49,24 @@ const tooltipStyle = {
 };
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, isError } = useGetDashboardStatsQuery();
+  const stats = data?.data || data;
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await dashboardApi.getStats();
-        if (response.data && response.data.success) {
-          setStats(response.data.data);
-        } else {
-          setStats(response.data); // Fallback
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="animate-spin text-orange-500" size={40} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="glass" style={{ padding: '1.5rem', color: '#f87171', borderLeft: '4px solid #f87171', margin: '2rem' }}>
+        <h4 style={{ margin: '0 0 0.5rem 0' }}>Failed to load dashboard statistics</h4>
+        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
+          Please try again later.
+        </p>
       </div>
     );
   }

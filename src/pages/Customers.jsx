@@ -68,11 +68,11 @@ const Customers = () => {
           <div className="customer-stats">
             <div>
               <div className="customer-stat-label">Total Orders</div>
-              <div className="customer-stat-value">{c.orders || 0}</div>
+              <div className="customer-stat-value">{c.orders_count || 0}</div>
             </div>
             <div>
               <div className="customer-stat-label">Total Spent</div>
-              <div className="customer-stat-value accent">${Number(c.spent || 0).toFixed(2)}</div>
+              <div className="customer-stat-value accent">${Number(c.orders_sum_total_amount || 0).toFixed(2)}</div>
             </div>
           </div>
         </div>
