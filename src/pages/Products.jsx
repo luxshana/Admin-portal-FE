@@ -462,6 +462,19 @@ const Products = () => {
                   />
                 </div>
 
+                <div className="form-group">
+                  <label><Filter size={16} /> Status</label>
+                  <select 
+                    name="status" 
+                    value={formData.status} 
+                    onChange={handleInputChange} 
+                    className="glass-input"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+
                 <div className="form-group full-width">
                   <label><FileText size={16} /> Description</label>
                   <textarea 
