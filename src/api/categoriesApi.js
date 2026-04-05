@@ -47,10 +47,11 @@ export const categoriesApi = createApi({
       query: () => '/dashboard',
     }),
     addCategory: builder.mutation({
-      query: (newCategory) => ({
+      query: (formData) => ({
         url: '/categories',
         method: 'POST',
-        body: newCategory,
+        body: formData,
+        // FormData is automatically handled by the browser
       }),
       invalidatesTags: ['Category'],
     }),
@@ -62,18 +63,18 @@ export const categoriesApi = createApi({
       invalidatesTags: ['Category'],
     }),
     updateCategory: builder.mutation({
-      query: ({ id, ...patch }) => ({
+      query: ({ id, formData }) => ({
         url: `/categories/${id}`,
-        method: 'PUT',
-        body: patch,
+        method: 'POST',
+        body: formData,
       }),
       invalidatesTags: ['Category'],
     }),
     addProduct: builder.mutation({
-      query: (newProduct) => ({
+      query: (formData) => ({
         url: '/products',
         method: 'POST',
-        body: newProduct,
+        body: formData,
       }),
       invalidatesTags: ['Product'],
     }),
@@ -85,10 +86,10 @@ export const categoriesApi = createApi({
       invalidatesTags: ['Product'],
     }),
     updateProduct: builder.mutation({
-      query: ({ id, ...patch }) => ({
+      query: ({ id, formData }) => ({
         url: `/products/${id}`,
-        method: 'PUT',
-        body: patch,
+        method: 'POST',
+        body: formData,
       }),
       invalidatesTags: ['Product'],
     }),

@@ -34,6 +34,8 @@ const Categories = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const handleExportExcel = () => {
     const wsData = categories.map(cat => ({
@@ -152,6 +154,8 @@ const Categories = () => {
       description: cat.description || '',
       status: cat.status || 'Active'
     });
+    setImagePreview(cat.image || null);
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -212,6 +216,8 @@ const Categories = () => {
     setIsEditing(false);
     setCurrentId(null);
     setFormData({ name: '', image: '', description: '', status: 'Active' });
+    setSelectedFile(null);
+    setImagePreview(null);
     setErrorMsg('');
   };
 
@@ -224,17 +230,46 @@ const Categories = () => {
       return;
     }
 
+    const submitData = new FormData();
+    submitData.append('name', formData.name);
+    submitData.append('description', formData.description || '');
+    submitData.append('status', formData.status);
+    
+    if (selectedFile) {
+      submitData.append('image', selectedFile);
+    } else if (formData.image) {
+      // If no new file is selected, but we have an image URL/path (existing)
+      submitData.append('image', formData.image);
+    }
+
+    // Add _method for PUT spoofing in Laravel
+    if (isEditing) {
+      submitData.append('_method', 'PUT');
+    }
+
     try {
       if (isEditing) {
-        await updateCategory({ id: currentId, ...formData }).unwrap();
+        await updateCategory({ id: currentId, formData: submitData }).unwrap();
       } else {
-        await addCategory(formData).unwrap();
+        await addCategory(submitData).unwrap();
       }
       resetForm();
     } catch (err) {
       console.error('Failed to save category:', err);
       const detailedError = err.data?.error ? ` (${err.data.error})` : '';
       setErrorMsg(err.data?.message ? `${err.data.message}${detailedError}` : 'Failed to save category. Please try again.');
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -432,15 +467,34 @@ const Categories = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Image URL</label>
-                  <input
-                    type="text"
-                    name="image"
-                    className="form-control"
-                    placeholder="https://example.com/image.jpg"
-                    value={formData.image}
-                    onChange={handleInputChange}
-                  />
+                  <label className="form-label">Category Image</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {imagePreview && (
+                      <div style={{ position: 'relative', width: '100%', height: '150px', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => { setSelectedFile(null); setImagePreview(null); }}
+                          style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: '0.25rem', color: '#fff', cursor: 'pointer' }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                    <label className="btn-secondary" style={{ width: '100%', cursor: 'pointer', textAlign: 'center', justifyContent: 'center' }}>
+                      <Upload size={18} /> {imagePreview ? 'Change Image' : 'Upload Image'}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="form-group">

@@ -36,6 +36,8 @@ const Products = () => {
   const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const handleExportExcel = () => {
     const wsData = products.map(prod => ({
@@ -200,11 +202,29 @@ const Products = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg('');
+
+    const submitData = new FormData();
+    submitData.append('name', formData.name);
+    submitData.append('category_id', formData.category_id);
+    submitData.append('price', formData.price);
+    submitData.append('description', formData.description || '');
+    submitData.append('status', formData.status);
+
+    if (selectedFile) {
+      submitData.append('image', selectedFile);
+    } else if (formData.image) {
+      submitData.append('image', formData.image);
+    }
+
+    if (isEditing) {
+      submitData.append('_method', 'PUT');
+    }
+
     try {
       if (isEditing) {
-        await updateProduct({ id: currentProductId, ...formData }).unwrap();
+        await updateProduct({ id: currentProductId, formData: submitData }).unwrap();
       } else {
-        await addProduct(formData).unwrap();
+        await addProduct(submitData).unwrap();
       }
       resetForm();
     } catch (err) {
@@ -212,6 +232,18 @@ const Products = () => {
       setErrorMsg(err.data?.message || 'Failed to save product. Please check your inputs.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -226,6 +258,8 @@ const Products = () => {
       description: product.description || '',
       status: product.status || 'Active'
     });
+    setImagePreview(product.image || null);
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -242,6 +276,8 @@ const Products = () => {
       description: '',
       status: 'Active'
     });
+    setSelectedFile(null);
+    setImagePreview(null);
     setErrorMsg('');
   };
 
@@ -451,15 +487,34 @@ const Products = () => {
                 </div>
 
                 <div className="form-group">
-                  <label><ImageIcon size={16} /> Image URL</label>
-                  <input 
-                    type="text" 
-                    name="image" 
-                    value={formData.image} 
-                    onChange={handleInputChange} 
-                    placeholder="https://..." 
-                    className="glass-input"
-                  />
+                  <label><ImageIcon size={16} /> Product Image</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {imagePreview && (
+                      <div style={{ position: 'relative', width: '100%', height: '120px', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => { setSelectedFile(null); setImagePreview(null); }}
+                          style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: '0.25rem', color: '#fff', cursor: 'pointer' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                    <label className="glass-input" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                      <Upload size={16} /> {imagePreview ? 'Change Image' : 'Upload Image'}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="form-group">
