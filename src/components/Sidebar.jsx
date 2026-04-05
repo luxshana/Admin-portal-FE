@@ -14,8 +14,8 @@ import {
 const menuItems = [
   { icon: <LayoutDashboard size={20} />, label: 'Dashboard',  path: '/' },
   { icon: <ShoppingBag size={20} />,    label: 'Orders',     path: '/orders' },
+   { icon: <LayoutGrid size={20} />,     label: 'Categories', path: '/categories' },
   { icon: <UtensilsCrossed size={20} />, label: 'Products',   path: '/products' },
-  { icon: <LayoutGrid size={20} />,     label: 'Categories', path: '/categories' },
   { icon: <Users size={20} />,          label: 'Customers',  path: '/customers' },
   { icon: <Settings size={20} />,       label: 'Settings',   path: '/settings' },
 ];

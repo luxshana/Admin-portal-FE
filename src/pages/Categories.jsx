@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, Filter, Loader, X, Trash, Download, Upload
 import * as XLSX from 'xlsx';
 import { 
   useGetCategoriesQuery, 
+  useGetProductsQuery,
   useAddCategoryMutation, 
   useDeleteCategoryMutation, 
   useUpdateCategoryMutation 
@@ -11,11 +12,13 @@ import {
 
 const Categories = () => {
   const { data = [], isLoading, isError } = useGetCategoriesQuery();
+  const { data: productsData = [] } = useGetProductsQuery();
   const [addCategory, { isLoading: isAdding }] = useAddCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
   
   const categories = data.data || data || [];
+  const allProducts = productsData.data || productsData || [];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -343,7 +346,21 @@ const Categories = () => {
                           {cat.description || 'N/A'}
                         </span>
                       </td>
-                      <td style={{ color: '#fff', fontWeight: 600 }}>{cat.products || 0} items</td>
+                      <td style={{ color: '#fff', fontSize: '0.85rem', maxWidth: '12rem' }}>
+                        {allProducts.filter(p => String(p.category_id) === String(cat.id)).length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', color: 'var(--text-muted)' }}>
+                            {allProducts
+                              .filter(p => String(p.category_id) === String(cat.id))
+                              .map((p, index, array) => (
+                                <span key={p.id} style={{ color: '#fff', fontWeight: 500 }}>
+                                  {p.name}{index < array.length - 1 ? ',' : ''}
+                                </span>
+                              ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>No products</span>
+                        )}
+                      </td>
                       <td className="col-sm">
                         <span className={`badge ${cat.status === 'Active' ? 'badge-green' : 'badge-red'}`}>
                           {cat.status || 'Inactive'}
