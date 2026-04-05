@@ -3,8 +3,8 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const categoriesApi = createApi({
   reducerPath: 'categoriesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'https://food-order.cyclescentre.com/api',
-    // baseUrl: 'http://127.0.0.1:8000/api',
+    // baseUrl: 'https://food-order.cyclescentre.com/api',
+    baseUrl: 'http://127.0.0.1:8000/api',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('admin_token');
       if (token) {
@@ -99,6 +99,22 @@ export const categoriesApi = createApi({
         body: patch,
       }),
       invalidatesTags: ['Order'],
+      async onQueryStarted({ id, ...patch }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          categoriesApi.util.updateQueryData('getOrders', undefined, (draft) => {
+            const orders = draft?.data || draft?.data_order_list?.data || (Array.isArray(draft) ? draft : draft?.orders || []);
+            const order = orders.find((o) => o.id === id);
+            if (order) {
+              Object.assign(order, patch);
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
   }),
 });

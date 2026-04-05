@@ -14,6 +14,7 @@ const statusBadge = {
   Shipped:         'badge badge-purple',
   shipped:         'badge badge-purple',
   'Ready to Pick': 'badge badge-blue',
+  'ready to pick': 'badge badge-blue',
 };
 
 const statusIcon = {
@@ -26,6 +27,7 @@ const statusIcon = {
   Shipped:         <Truck size={13} />,
   shipped:         <Truck size={13} />,
   'Ready to Pick': <AlertCircle size={13} />,
+  'ready to pick': <AlertCircle size={13} />,
 };
 
 /* ── Receipt Modal ───────────────────────────────────────── */
@@ -34,7 +36,7 @@ const ReceiptModal = ({ order: initialOrder, onClose, onUpdateStatus }) => {
   
   // Merge initial order with detailed order data
   const detailedOrder = orderDetailsData?.data || orderDetailsData?.order || orderDetailsData || {};
-  const order = { ...initialOrder, ...detailedOrder };
+  const order = { ...detailedOrder, ...initialOrder };
 
   const [updating, setUpdating] = useState(false);
   const handleStatusChange = async (e) => {
@@ -149,6 +151,7 @@ const ReceiptModal = ({ order: initialOrder, onClose, onUpdateStatus }) => {
                         >
                           <option value="pending" style={{ color: '#000' }}>Pending</option>
                           <option value="processing" style={{ color: '#000' }}>Processing</option>
+                          <option value="ready to pick" style={{ color: '#000' }}>Ready to Pick</option>
                           <option value="shipped" style={{ color: '#000' }}>Shipped</option>
                           <option value="delivered" style={{ color: '#000' }}>Delivered</option>
                         </select>
@@ -267,14 +270,25 @@ const Orders = () => {
   const { data: ordersData, isLoading, isError, error } = useGetOrdersQuery();
   const { data: usersData } = useGetUserQuery();
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
   const [updateOrder] = useUpdateOrderMutation();
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
+      setUpdatingId(id);
       await updateOrder({ id, status: newStatus }).unwrap();
-      setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+      // Update local setSelectedOrder if the modal is currently open and viewing this order
+      if (selectedOrder?.id === id) {
+        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+      }
     } catch (err) {
       console.error('Failed to update status', err);
+      // Construct a useful error message for the user
+      const msg = err?.data?.message || err?.message || 'Unknown error occurred during status update';
+      const detail = err?.data?.error ? `\n\nDetail: ${err.data.error}` : '';
+      alert(`Status Update Failed!\n${msg}${detail}`);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -365,10 +379,33 @@ const Orders = () => {
                         ${Number(o.total_amount || o.total || 0).toFixed(2)}
                       </td>
                       <td className="col-sm">
-                        <span className={statusBadge[o.status] || 'badge'}>
-                          {statusIcon[o.status]}
-                          {o.status}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <select 
+                            value={(o.status || 'pending').toLowerCase()} 
+                            onChange={(e) => handleUpdateStatus(o.id, e.target.value)}
+                            disabled={updatingId === o.id}
+                            className={statusBadge[o.status] || 'badge'}
+                            style={{
+                              border: 'none',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              outline: 'none',
+                              appearance: 'none',
+                              textAlign: 'center',
+                              minWidth: '100px'
+                            }}
+                          >
+                            <option value="pending" style={{ color: '#000' }}>Pending</option>
+                            <option value="processing" style={{ color: '#000' }}>Processing</option>
+                            <option value="ready to pick" style={{ color: '#000' }}>Ready to Pick</option>
+                            <option value="shipped" style={{ color: '#000' }}>Shipped</option>
+                            <option value="delivered" style={{ color: '#000' }}>Delivered</option>
+                          </select>
+                          {updatingId === o.id && <Loader size={12} className="animate-spin" />}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button
